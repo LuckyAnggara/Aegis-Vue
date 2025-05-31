@@ -12,7 +12,7 @@
             @click="goBackToGoals"
             class="w-full sm:w-auto"
           >
-            <ArrowLeft class="mr-2 h-4 w-4" /> Kembali ke Sasaran
+            <ArrowLeft class="mr-2 h-4 w-4 cursor-pointer" /> Kembali ke Sasaran
           </Button>
           <Button
             @click="navigateToAddPotentialRiskPage"
@@ -21,7 +21,7 @@
               !authStore.isAuthenticated ||
               !authStore.isProfileComplete
             "
-            class="w-full sm:w-auto"
+            class="w-full sm:w-auto cursor-pointer"
           >
             <PlusCircle class="mr-2 h-4 w-4" /> Tambah Potensi Risiko Baru
           </Button>
@@ -46,6 +46,7 @@
       </CardHeader>
       <CardContent>
         <Button
+        class="cursor-pointer"
           @click="openBrainstormDialog"
           :disabled="
             pageLoading ||
@@ -149,12 +150,13 @@
           class="mt-6"
         >
           <Button
-            @click="openAddRiskDialog"
+            class="cursor-pointer"
+               @click="navigateToAddPotentialRiskPage"
             :disabled="
               !authStore.isAuthenticated || !authStore.isProfileComplete
             "
           >
-            <PlusCircle class="mr-2 h-4 w-4" /> Identifikasi Risiko Pertama
+            <PlusCircle class="mr-2 h-4 w-4" /> Identifikasi Potensi Risiko Pertama
           </Button>
         </div>
       </div>
@@ -183,26 +185,17 @@
         Sasaran dengan ID yang diminta tidak ditemukan atau Anda tidak memiliki
         akses.
       </p>
-      <Button variant="outline" @click="goBackToGoals" class="mt-4">
-        <ArrowLeft class="mr-2 h-4 w-4" /> Kembali ke Daftar Sasaran
+      <Button variant="outline" @click="goBackToGoals" class="mt-4 cursor-pointer">
+        <ArrowLeft class="mr-2 h-4 w-4" /> Kembali
       </Button>
     </div>
-
-    <AddEditPotentialRiskDialog
-      v-if="currentGoal"
-      v-model="isRiskDialogOpen"
-      :existing-risk="riskToEdit"
-      :goal-id="goalId"
-      :goal-code="currentGoal?.code"
-      @save="handleRiskSave"
-    />
 
     <ManageRiskCausesDialog
       v-if="selectedRiskForCauses"
       v-model="isManageCausesDialogOpen"
       :potential-risk="selectedRiskForCauses"
       :parent-goal-code="currentGoal?.code"
-      @causes-updated="appStore.fetchPotentialRisksByGoalId(currentGoal.id)"
+      @causes-updated="appStore.getGoalById(currentGoal.id)"
     />
 
     <AlertDialog
@@ -267,7 +260,6 @@ import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import PageHeader from '@/components/global/PageHeader.vue'
 import PotentialRiskCard from '@/components/risks/PotentialRiskCard.vue' // Ganti nama dari ListItem
-// import AddEditPotentialRiskDialog from '@/components/risks/AddEditPotentialRiskDialog.vue'
 import ManageRiskCausesDialog from '@/components/risks/ManageRiskCausesDialog.vue'
 
 import { Button } from '@/components/ui/button'

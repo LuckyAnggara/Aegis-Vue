@@ -12,6 +12,7 @@ export async function addPotentialRisk(
   data,
   goalId,
   userId,
+  uprId,
   period,
   sequenceNumber
 ) {

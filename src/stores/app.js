@@ -43,6 +43,7 @@ import {
 
 // Import constants and utility functions
 import { CONTROL_MEASURE_TYPE_KEYS } from '@/lib/types' // Pastikan path ini benar dan file types.js Anda sudah dibuat/diadaptasi
+import { useAuthStore } from './auth'
 
 export const useAppStore = defineStore('app', () => {
   // --- State ---
@@ -275,6 +276,13 @@ export const useAppStore = defineStore('app', () => {
   }
 
   const getGoalById = async (id, uprId, period) => {
+    const authStore = useAuthStore()
+    if(uprId === null){
+      uprId = authStore.uprUser.id
+    }
+        if(period === null){
+      uprperiodId = authStore.uprUser.activePeriod
+    }
     const goalFromStore = goals.value.find(
       (g) => g.id === id && g.uprId === uprId && g.period === period
     )
@@ -361,6 +369,10 @@ export const useAppStore = defineStore('app', () => {
     period,
     sequenceNumber
   ) => {
+
+    const authStore = useAuthStore()
+    uprId = authStore.uprUser.id
+    period = authStore.uprUser.activePeriod
     try {
       const newPotentialRisk = await addPotentialRiskToService(
         data,

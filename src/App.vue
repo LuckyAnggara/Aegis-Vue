@@ -26,6 +26,8 @@ const isSetupPage = computed(() => route.name === 'profile-setup')
 onMounted(async () => {
   // Inisialisasi autentikasi saat aplikasi dimuat
   await authStore.initializeAuth()
+
+
 })
 </script>
 

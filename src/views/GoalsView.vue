@@ -198,6 +198,7 @@ onMounted(() => {
 
 function fetchData() {
   if (authStore.isAuthenticated && authStore.isProfileComplete) {
+    if(appStore.goals.length < 1)
     appStore.fetchGoals(authStore.uprUser.id, authStore.uprUser.activePeriod)
   } else {
     appStore.goals.value = [] // Reset goals jika tidak ada konteks pengguna
