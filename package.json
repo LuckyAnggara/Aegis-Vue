@@ -9,12 +9,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.49.8",
+    "@genkit-ai/googleai": "^1.10.0",
     "@tailwindcss/cli": "^4.1.8",
     "@tailwindcss/vite": "^4.1.8",
     "@vueuse/core": "^13.3.0",
+    "appwrite": "^18.1.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "dotenv": "^16.5.0",
+    "genkit": "^1.10.0",
     "lucide-vue-next": "^0.511.0",
     "pinia": "^3.0.2",
     "reka-ui": "^2.3.0",
@@ -25,6 +28,8 @@
     "vue-sonner": "^2.0.0"
   },
   "devDependencies": {
+    "@iconify-json/radix-icons": "^1.2.2",
+    "@iconify/vue": "^5.0.0",
     "@vitejs/plugin-vue": "^5.2.3",
     "autoprefixer": "^10.4.21",
     "postcss": "^8.5.3",

@@ -1,210 +1,126 @@
 // src/router/index.js
-import { createRouter, createWebHistory } from 'vue-router';
-// Import Supabase client
-import { supabase } from '@/lib/supabaseClient'
-
-import AppLayout from '@/components/layout/AppLayout.vue';
-import LayoutFull from '@/components/layout/LayoutFull.vue';
-import { useAuthStore } from '@/stores/authStore';
-import { useAppStore } from '@/stores/appStore';
-
-const routes = [
-  {
-    path: '/',
-    component: AppLayout,
-    meta: { requiresAuth: true },
-    children: [
-      {
-        path: '',
-        name: 'Dashboard',
-        component: () => import('../views/DashboardView.vue'),
-        meta: { title: 'Dasbor Risiko' }
-      },
-      // {
-      //   path: 'goals',
-      //   name: 'Goals',
-      //   component: () => import('../views/GoalsView.vue'),
-      //   meta: { title: 'Sasaran' }
-      // },
-      // {
-      //   path: 'all-risks',
-      //   name: 'AllRisks',
-      //   component: () => import('../views/AllRisksView.vue'), // Ganti dengan nama view yang benar
-      //   meta: { title: 'Identifikasi Risiko' }
-      // },
-      // {
-      //   path: 'all-risks/manage/:potentialRiskId', // Untuk add & edit
-      //   name: 'ManagePotentialRisk',
-      //   component: () => import('../views/ManagePotentialRiskView.vue'), // Ganti dengan nama view yang benar
-      //   meta: { title: 'Kelola Potensi Risiko', requiresAuth: true } // Pastikan ini juga terproteksi
-      // },
-      // {
-      //   path: 'risk-analysis',
-      //   name: 'RiskAnalysis',
-      //   component: () => import('../views/RiskAnalysisView.vue'), // Ganti dengan nama view yang benar
-      //   meta: { title: 'Analisis Risiko' }
-      // },
-      // {
-      //   path: 'risk-cause-analysis/:riskCauseId',
-      //   name: 'RiskCauseAnalysis',
-      //   component: () => import('../views/RiskCauseAnalysisView.vue'), // Ganti dengan nama view yang benar
-      //   meta: { title: 'Analisis Detail Penyebab Risiko', requiresAuth: true }
-      // },
-      // {
-      //   path: 'control-measure-manage/:controlMeasureId',
-      //   name: 'ManageControlMeasure',
-      //   component: () => import('../views/ManageControlMeasureView.vue'), // Ganti dengan nama view yang benar
-      //   meta: { title: 'Kelola Tindakan Pengendalian', requiresAuth: true }
-      // },
-      // {
-      //   path: 'risk-priority',
-      //   name: 'RiskPriority',
-      //   component: () => import('../views/RiskPriorityView.vue'), // Ganti dengan nama view yang benar
-      //   meta: { title: 'Prioritas Risiko' }
-      // },
-      // {
-      //   path: 'monitoring',
-      //   name: 'MonitoringSessions',
-      //   component: () => import('../views/MonitoringSessionsView.vue'), // Ganti dengan nama view yang benar
-      //   meta: { title: 'Pemantauan Risiko' }
-      // },
-      // {
-      //   path: 'monitoring/new',
-      //   name: 'NewMonitoringSession',
-      //   component: () => import('../views/NewMonitoringSessionView.vue'), // Ganti dengan nama view yang benar
-      //   meta: { title: 'Sesi Pemantauan Baru' }
-      // },
-      // {
-      //   path: 'monitoring/:sessionId/conduct',
-      //   name: 'ConductMonitoring',
-      //   component: () => import('../views/ConductMonitoringView.vue'), // Ganti dengan nama view yang benar
-      //   meta: { title: 'Pelaksanaan Pemantauan' }
-      // },
-      // {
-      //   path: 'settings',
-      //   name: 'Settings',
-      //   component: () => import('../views/SettingsView.vue'),
-      //   meta: { title: 'Pengaturan' }
-      // },
-    ]
-  },
-  {
-    path: '/auth',
-    component: LayoutFull,
-    children: [
-      {
-        path: 'login',
-        name: 'Login',
-        component: () => import('../views/LoginView.vue'),
-        meta: { guestOnly: true }
-      },
-      {
-        path: 'register',
-        name: 'Register',
-        component: () => import('../views/RegisterView.vue'),
-        meta: { guestOnly: true }
-      }
-    ]
-  },
-  {
-    path: '/profile-setup',
-    component: LayoutFull,
-    meta: {
-      requiresAuth: true,
-      profileIncompleteOnly: true
-    },
-    children: [
-      {
-        path: '',
-        name: 'ProfileSetup',
-        component: () => import('../views/ProfileSetupView.vue'),
-        meta: { title: 'Lengkapi Profil Anda' }
-      }
-    ]
-  },
-  { path: '/login', redirect: '/auth/login' },
-  { path: '/register', redirect: '/auth/register' },
-
-  // { path: '/:pathMatch(.*)*', name: 'NotFound', component: () => import('../views/NotFoundView.vue') }
-];
+import { createRouter, createWebHistory } from 'vue-router'
+import { useAuthStore } from '@/stores/auth' // Import auth store
+import routes from './routes'
+import { watch } from 'vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  routes,
-  scrollBehavior(to, from, savedPosition) {
-    if (savedPosition) {
-      return savedPosition;
-    } else {
-      return { top: 0 };
+  routes: routes,
+})
+router.beforeEach(async (to, from, next) => {
+  const authStore = useAuthStore()
+  console.log(`[Guard] Navigating to: ${String(to.name || to.path)}`)
+  console.log(
+    `[Guard] Initial store state: isLoading=${authStore.authLoading}, isAuthenticated=${authStore.isAuthenticated}, isProfileComplete=${authStore.isProfileComplete}`
+  )
+
+  // 1. Tunggu hingga proses loading inisial dari authStore selesai
+  // Ini penting agar kita memiliki state auth yang akurat sebelum membuat keputusan.
+  if (authStore.authLoading) {
+    console.log('[Guard] Waiting for authStore.authLoading to become false...')
+    await new Promise((resolve) => {
+      // Cek langsung jika isLoading sudah false, karena watch dengan immediate:false
+      // tidak akan langsung trigger jika nilai awal sudah sesuai kondisi.
+      if (!authStore.authLoading) {
+        console.log(
+          '[Guard] authStore.authLoading was already false before watch setup.'
+        )
+        resolve(undefined)
+        return
+      }
+
+      const unwatch = watch(
+        () => authStore.authLoading,
+        (loading) => {
+          if (!loading) {
+            console.log(
+              '[Guard] authStore.authLoading changed to false via watch.'
+            )
+            unwatch() // Hentikan watcher setelah kondisi terpenuhi
+            resolve(undefined)
+          }
+        },
+        { immediate: false } // immediate: false berarti watcher hanya aktif saat nilai berubah
+      )
+    })
+  }
+
+  // Setelah loading selesai, dapatkan state terbaru dari store
+  const isAuthenticated = authStore.isAuthenticated
+  const isProfileComplete = authStore.isProfileComplete // Getter yang sudah ada
+
+  console.log(
+    `[Guard] After loading: isAuthenticated=${isAuthenticated}, isProfileComplete=${isProfileComplete}`
+  )
+  console.log(to.name)
+
+  // Logika Navigasi Utama:
+
+  // A. Rute yang memerlukan autentikasi (`to.meta.requiresAuth === true`)
+  if (to.meta.requiresAuth) {
+    if (!isAuthenticated) {
+      // 1. Jika rute butuh auth, TAPI pengguna TIDAK terotentikasi
+      console.log(
+        '[Guard] Decision: Route requires auth, user NOT authenticated. Redirecting to /login.'
+      )
+      next({ name: 'login', query: { redirect: to.fullPath } })
+      return // Penting untuk menghentikan eksekusi guard lebih lanjut
+    }
+    // Pengguna terotentikasi, sekarang cek kelengkapan profil jika rute memerlukannya
+    if (to.meta.requiresProfileComplete && !isProfileComplete) {
+      console.log(to.meta.requiresProfileComplete)
+      // 2. Jika rute butuh profil lengkap, TAPI profil BELUM lengkap
+      // DAN pengguna tidak sedang menuju halaman untuk melengkapi profilnya (`profile-setup` atau `settings`)
+      if (to.name !== 'profile-setup' && to.name !== 'settings') {
+        console.log(
+          '[Guard] Decision: Route requires complete profile, profile INCOMPLETE. Redirecting to /profile-setup.'
+        )
+        next({ name: 'profile-setup' })
+        return
+      }
     }
   }
-});
 
-router.beforeEach(async (to, from, next) => {
-  const authStore = useAuthStore();
-  const appStore = useAppStore();
-
-  if (authStore.loadingInitial) {
-    console.log("[Guard] Auth is still initializing (loadingInitial is true). Waiting...");
-    const loadingPromise = new Promise(resolve => {
-      const unsubscribe = authStore.$subscribe((mutation, state) => {
-        if (!state.loadingInitial) { // Stop waiting when loadingInitial becomes false
-          unsubscribe(); // Clean up the watcher
-          resolve(true); // Resolve the promise indicating loading is done
-        }
-      });
-      // Set a timeout to resolve the promise even if loadingInitial doesn't change
-      setTimeout(() => {
-        if (authStore.loadingInitial) { // If it's still loading after timeout
-        }
-        resolve();
-      }, 2500); // Timeout bisa disesuaikan, misal 2.5 detik
-    });
-    console.log("[Guard] Finished waiting for loadingInitial. Current state:", authStore.loadingInitial);
+  // B. Rute yang hanya untuk tamu/belum login (`to.meta.requiresGuest === true`)
+  if (to.meta.requiresGuest && isAuthenticated) {
+    // 3. Jika rute hanya untuk tamu, TAPI pengguna SUDAH terotentikasi
+    console.log(
+      '[Guard] Decision: Route requires guest, user IS authenticated. Redirecting to /home.'
+    )
+    next({ name: 'dashboard' }) // Ganti 'home' dengan nama rute dashboard default Anda
+    return
   }
 
-  const isAuthenticated = authStore.isAuthenticated;
-  let isProfileComplete = appStore.isProfileComplete;
-
-  // Jika user terautentikasi tapi appUser (profil publik) belum ada di store, coba fetch.
-  // Ini penting jika fetchAppUserProfile di onAuthStateChange belum selesai atau terlewat.
-  if (isAuthenticated && authStore.user && !appStore.appUser && !appStore.profileLoading) {
-    console.log("[Guard] User is authenticated but appUser profile is still missing in store. Attempting to fetch profile...");
-    await appStore.fetchAppUserProfile(authStore.user.id);
-    isProfileComplete = appStore.isProfileComplete; // Update isProfileComplete setelah fetch
-    console.log(`[Guard] Profile fetched from guard. isProfileComplete: ${isProfileComplete}`);
+  // C. Kasus Khusus: Akses ke halaman setup profil padahal profil sudah lengkap
+  if (isAuthenticated && isProfileComplete && to.name === 'profile-setup') {
+    // 4. Jika pengguna terotentikasi, profil SUDAH lengkap, TAPI mencoba akses /profile-setup
+    console.log(
+      '[Guard] Decision: User authenticated & profile complete, trying to access /profile-setup. Redirecting to /home.'
+    )
+    next({ name: 'dashboard' }) // Ganti 'home' dengan nama rute dashboard default Anda
+    return
   }
-  
-  const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
-  const guestOnly = to.matched.some(record => record.meta.guestOnly);
-  const profileIncompleteOnly = to.matched.some(record => record.meta.profileIncompleteOnly);
-
-  // Logging yang lebih detail
-  console.log(
-    `[Guard Decision Context] Path: ${to.path}, Name: ${to.name}`,
-    `\n  isAuthenticated: ${isAuthenticated} (User ID: ${authStore.user?.id})`,
-    `\n  isProfileComplete: ${isProfileComplete} (App User Display Name: ${appStore.appUser?.display_name})`,
-    `\n  Requires Auth: ${requiresAuth}`,
-    `\n  Guest Only: ${guestOnly}`,
-    `\n  Profile Incomplete Only: ${profileIncompleteOnly}`
-  );
-
-  if (guestOnly && isAuthenticated) {
-    console.log('[Guard Decision] Redirecting to Dashboard (guestOnly && isAuthenticated).');
-    next({ name: 'Dashboard' });
-  } else if (requiresAuth && !isAuthenticated) {
-    console.log('[Guard Decision] Redirecting to Login (requiresAuth && !isAuthenticated).');
-    next({ name: 'Login', query: { redirectFrom: to.fullPath } });
-  } else if (requiresAuth && isAuthenticated && !isProfileComplete && to.name !== 'ProfileSetup' && to.name !== 'Settings') {
-    console.log('[Guard Decision] Redirecting to ProfileSetup (isAuthenticated, !isProfileComplete, not ProfileSetup/Settings).');
-    next({ name: 'ProfileSetup' });
-  } else if (profileIncompleteOnly && isAuthenticated && isProfileComplete) {
-    console.log('[Guard Decision] Redirecting to Dashboard (profileIncompleteOnly && isProfileComplete).');
-    next({ name: 'Dashboard' });
-  } else {
-    console.log('[Guard Decision] Proceeding with navigation.');
-    next();
+  // E. Kasus Khusus: Pengguna mencoba mengakses halaman login padahal sudah login & profil lengkap
+  if (isAuthenticated && isProfileComplete && to.name === 'login') {
+    console.log(
+      '[Guard] Decision: User already authenticated & profile complete, trying to access /login. Redirecting to /home.'
+    )
+    next({ name: 'dashboard' }) // atau dashboard sesuai rute kamu
+    return
   }
-});
 
-export default router;
+  if (isAuthenticated && !isProfileComplete && to.name === 'login') {
+    console.log(
+      '[Guard] Decision: User already authenticated & profile incomplete, trying to access /login. Redirecting to /profile-setup.'
+    )
+    next({ name: 'profile-setup' }) // atau rute yang sesuai untuk melengkapi profil
+    return
+  }
+
+  // D. Jika semua kondisi di atas tidak terpenuhi, izinkan navigasi
+  console.log('[Guard] Decision: Navigation allowed to target route.')
+  next()
+})
+
+export default router

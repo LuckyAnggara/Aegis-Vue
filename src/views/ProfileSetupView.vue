@@ -1,44 +1,66 @@
-// src/views/ProfileSetupView.vue
 <template>
-  <div class="flex min-h-screen flex-col items-center justify-center bg-background p-4">
+  <div
+    class="flex min-h-screen flex-col items-center justify-center bg-background p-4"
+  >
     <Card class="w-full max-w-md shadow-xl">
       <CardHeader class="space-y-1 text-center">
-        <ShieldCheck class="mx-auto h-12 w-12 text-primary mb-2" />
-        <CardTitle class="text-2xl">Lengkapi Profil Anda</CardTitle>
+        <AppLogo class="mx-auto h-12 w-12 text-primary mb-2" />
+        <CardTitle class="text-2xl">Lengkapi Data </CardTitle>
         <CardDescription>
-          Selamat datang di RiskWise! Untuk memulai, silakan lengkapi informasi UPR (Unit Pemilik Risiko) dan periode awal Anda.
+          Silakan lengkapi data UPR dan periode awal Anda untuk melanjutkan.
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form @submit.prevent="handleSubmitProfile" class="space-y-6">
+        <form @submit.prevent="handleSubmit" class="space-y-6">
           <div class="space-y-1.5">
-            <Label for="displayName">Nama Unit Pengelola Risiko (UPR)</Label>
+            <Label for="uprName">Nama Unit Pengelola Risiko</Label>
             <Input
-              id="displayName"
+              id="uprName"
               type="text"
-              placeholder="Masukkan Nama UPR"
-              v-model="form.displayName"
+              placeholder="Masukkan Nama Unit Pengelola Ris Anda"
+              v-model="uprName"
               required
               :disabled="isSaving"
             />
-            <p class="text-xs text-muted-foreground">Nama ini akan digunakan sebagai identitas UPR Anda dalam aplikasi.</p>
+            <p class="text-xs text-muted-foreground">
+              Nama ini akan digunakan sebagai identitas UPR Anda.
+            </p>
+            <p v-if="uprNameError" class="text-xs text-destructive mt-1">
+              {{ uprNameError }}
+            </p>
           </div>
-
+          <div class="space-y-1.5">
+            <Label for="description">Deskripsi Unit Pengelola Risiko</Label>
+            <Textarea
+              id="description"
+              placeholder="Masukkan Deskripsi Unit Pengelola Risiko Anda"
+              v-model="description"
+              :disabled="isSaving"
+            ></Textarea>
+            <p class="text-xs text-muted-foreground">
+              Deskripsi ini akan digunakan untuk menjelaskannya kepada pengguna
+              UPR Anda.
+            </p>
+          </div>
           <div class="space-y-1.5">
             <Label for="initialPeriod">Tahun Periode Awal</Label>
             <Input
               id="initialPeriod"
               type="text"
-              placeholder="YYYY (misalnya, 2024)"
-              v-model="form.initialPeriod"
+              placeholder="YYYY atau YYYY/YYYY atau YYYY-S1/Q1"
+              v-model="initialPeriod"
               required
-              pattern="\d{4}"
-              title="Masukkan tahun dalam format YYYY (4 digit angka)"
+              pattern="\d{4}(?:[-\/](?:S[1-2]|Q[1-4]|(?:\d{4})))?"
+              title="Masukkan tahun dalam format YYYY, YYYY/YYYY atau YYYY-S1/S2/Q1-Q4"
               :disabled="isSaving"
             />
-             <p class="text-xs text-muted-foreground">Ini akan menjadi periode aktif pertama Anda dan ditambahkan ke daftar periode yang tersedia.</p>
+            <p class="text-xs text-muted-foreground">
+              Ini akan menjadi periode aktif pertama Anda.
+            </p>
+            <p v-if="initialPeriodError" class="text-xs text-destructive mt-1">
+              {{ initialPeriodError }}
+            </p>
           </div>
-
           <div class="space-y-1.5">
             <Label for="riskAppetite">Selera Risiko Awal (1-25)</Label>
             <Input
@@ -46,27 +68,38 @@
               type="number"
               min="1"
               max="25"
-              placeholder="Default: 5"
-              v-model.number="form.riskAppetite"
+              v-model="riskAppetite"
               :disabled="isSaving"
             />
-            <p class="text-xs text-muted-foreground">Skor batas tingkat risiko yang dapat diterima (1-25).</p>
+            <p class="text-xs text-muted-foreground">
+              Skor tingkat risiko di bawah atau sama dengan ini mungkin tidak
+              memerlukan prioritas tinggi.
+            </p>
+            <p v-if="riskAppetiteError" class="text-xs text-destructive mt-1">
+              {{ riskAppetiteError }}
+            </p>
           </div>
-
           <div class="space-y-1.5">
-            <Label for="defaultMonitoringFrequency">Frekuensi Pemantauan Standar (Opsional)</Label>
-            <Select v-model="form.defaultMonitoringFrequency" :disabled="isSaving">
+            <Label for="defaultMonitoringFrequency"
+              >Frekuensi Pemantauan Standar (Opsional)</Label
+            >
+            <Select v-model="defaultMonitoringFrequency" :disabled="isSaving">
               <SelectTrigger id="defaultMonitoringFrequency">
                 <SelectValue placeholder="Pilih frekuensi standar" />
               </SelectTrigger>
               <SelectContent>
- <SelectItem :value="NO_FREQUENCY_SENTINEL_VALUE">_Tidak Diatur_</SelectItem>
-                <SelectItem v-for="freq in MONITORING_PERIOD_FREQUENCIES" :key="freq" :value="freq">
+                <SelectItem :value="NO_FREQUENCY_SENTINEL"
+                  >_Tidak Diatur_</SelectItem
+                >
+                <SelectItem
+                  v-for="freq in MONITORING_PERIOD_FREQUENCIES_JS"
+                  :key="freq"
+                  :value="freq"
+                >
                   {{ freq }}
                 </SelectItem>
               </SelectContent>
             </Select>
-             <p class="text-xs text-muted-foreground">Default saat membuat sesi pemantauan baru.</p>
           </div>
 
           <Button type="submit" class="w-full" :disabled="isSaving">
@@ -76,166 +109,175 @@
           </Button>
         </form>
       </CardContent>
-       <CardFooter class="text-center text-xs text-muted-foreground pt-4">
-          <p>&copy; {{ new Date().getFullYear() }} RiskWise. Aplikasi Manajemen Risiko.</p>
+      <CardFooter class="text-center text-xs text-muted-foreground pt-4">
+        <p>
+          &copy; {{ new Date().getFullYear() }} RiskWise. Aplikasi Manajemen
+          Risiko.
+        </p>
       </CardFooter>
     </Card>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, watch } from 'vue';
-import { useRouter } from 'vue-router';
-import { useAuthStore } from '@/stores/authStore';
-import { useAppStore } from '@/stores/appStore';
-import { toast } from 'vue-sonner';
-import { supabase } from '@/lib/supabaseClient';
+import { ref, onMounted, watch, shallowRef } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select' //
+import { Loader2, Save } from 'lucide-vue-next'
+import { toast } from 'vue-sonner' // Pastikan path ini benar
 
-// Impor komponen UI Shadcn
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import AppLogo from '@/components/global/AppLogo.vue' // Asumsi Anda buat komponen ini
+import { MONITORING_PERIOD_FREQUENCIES as MONITORING_PERIOD_FREQUENCIES_JS } from '@/lib/types' //
+import { useUprStore } from '@/stores/upr'
+import Textarea from '@/components/ui/textarea/Textarea.vue'
 
-// Impor ikon dari lucide-vue-next
-import { Loader2, Save, ShieldCheck } from 'lucide-vue-next';
+const DEFAULT_INITIAL_PERIOD_JS = new Date().getFullYear().toString() //
+const NO_FREQUENCY_SENTINEL = '__NONE__' //
 
-// Konstanta ini menyediakan "mock" data untuk dropdown
-const MONITORING_PERIOD_FREQUENCIES = ['Bulanan', 'Triwulanan', 'Semesteran', 'Tahunan'];
-const DEFAULT_INITIAL_PERIOD_STRING = new Date().getFullYear().toString();
-// Nilai sentinel untuk opsi "_Tidak Diatur_"
-const NO_FREQUENCY_SENTINEL_VALUE = 'unset'; // Menggunakan string eksplisit untuk nilai sentinel
+const authStore = useAuthStore()
+const uprStore = useUprStore() // Gunakan shallowRef untuk menghindari reactivity yang tidak perlu
+const router = useRouter()
 
-const authStore = useAuthStore();
-const appStore = useAppStore();
-const router = useRouter();
+const uprName = ref('')
+const description = ref('')
+const initialPeriod = ref(DEFAULT_INITIAL_PERIOD_JS)
+const riskAppetite = ref('5') //
+const defaultMonitoringFrequency = ref(NO_FREQUENCY_SENTINEL) //
+const isSaving = ref(false)
 
-const form = reactive({
-  displayName: '',
-  initialPeriod: DEFAULT_INITIAL_PERIOD_STRING,
-  riskAppetite: 5,
-  // Default ke "Tidak Diatur"
-  defaultMonitoringFrequency: NO_FREQUENCY_SENTINEL_VALUE,
-});
-
-const isSaving = ref(false);
+const uprNameError = ref('')
+const initialPeriodError = ref('')
+const riskAppetiteError = ref('')
 
 onMounted(() => {
-  if (authStore.user) {
-    if (appStore.appUser) {
-      form.displayName = appStore.appUser.display_name || authStore.user.email?.split('@')[0] || '';
-      form.initialPeriod = appStore.appUser.active_period || DEFAULT_INITIAL_PERIOD_STRING;
-      form.riskAppetite = appStore.appUser.risk_appetite ?? 5;
-      // Mengambil dari appUser jika ada, jika tidak, tetap NO_FREQUENCY_SENTINEL_VALUE
-      form.defaultMonitoringFrequency = appStore.appUser.monitoring_settings?.defaultFrequency || NO_FREQUENCY_SENTINEL_VALUE;
-    } else {
-      form.displayName = authStore.user.email?.split('@')[0] || '';
-      // Nilai default lainnya sudah diatur di `form`
-    }
-  }
-});
-
-watch(() => appStore.appUser, (newAppUser) => {
-  if (newAppUser && authStore.user) {
-    form.displayName = newAppUser.display_name || authStore.user.email?.split('@')[0] || '';
-    if (!newAppUser.active_period) {
-      form.initialPeriod = DEFAULT_INITIAL_PERIOD_STRING;
-    } else {
-      form.initialPeriod = newAppUser.active_period;
-    }
-    form.riskAppetite = newAppUser.risk_appetite ?? 5;
-    form.defaultMonitoringFrequency = newAppUser.monitoring_settings?.defaultFrequency || NO_FREQUENCY_SENTINEL_VALUE;
-  }
-}, { immediate: false });
-
-
-const handleSubmitProfile = async () => {
-  if (!authStore.user) {
-    toast.error("Sesi tidak valid atau Anda belum login. Silakan login kembali.");
-    router.push({ name: 'Login' });
-    return;
-  }
-
-  if (!form.displayName.trim()) {
-    toast.error("Nama UPR / Nama Pengguna harus diisi.");
-    return;
-  }
-  if (!/^\d{4}$/.test(form.initialPeriod.trim())) {
-    toast.error("Tahun periode awal harus dalam format YYYY (misalnya, 2024).");
-    return;
-  }
-  if (form.riskAppetite < 1 || form.riskAppetite > 25) {
-    toast.error("Selera Risiko harus berupa angka antara 1 dan 25.");
-    return;
-  }
-
-  isSaving.value = true;
-  console.log('[ProfileSetup] handleSubmitProfile: Saving started...');
-  
-    const frequencyToSave = form.defaultMonitoringFrequency === NO_FREQUENCY_SENTINEL_VALUE
-                            ? null
-                            : form.defaultMonitoringFrequency;
-
-    const profileDataToUpdate = {
-      display_name: form.displayName.trim(),
-      // upr_id: form.displayName.trim(),
-      // active_period: form.initialPeriod.trim(),
-      // available_periods: [form.initialPeriod.trim()],
-      // risk_appetite: form.riskAppetite,
-      // monitoring_settings: {
-      //   defaultFrequency: frequencyToSave
-      // }
-    };
-       // TITIK 1: supabase.auth.updateUser (jika kondisi terpenuhi)
-       if (authStore.user.user_metadata?.full_name !== profileDataToUpdate.display_name) {
-          console.log('[ProfileSetup] Attempting to update Supabase Auth user metadata...');
-          const { data: updatedAuthUser, error: authUpdateError } = await supabase.auth.updateUser({
-              data: { full_name: profileDataToUpdate.display_name } 
-          });
-          // Apakah ini resolve/reject?
+  // Jika pengguna sudah login dan profilnya sudah lengkap, arahkan ke dashboard
+  // Atau jika appUser masih null setelah auth selesai (menunggu fetchAppUser)
+  if (authStore.authLoading) {
+    // Jika authStore masih loading (termasuk fetch profil awal)
+    const unwatch = watch(
+      () => authStore.authLoading,
+      (newLoadingState) => {
+        if (!newLoadingState) {
+          // Setelah loading selesai
+          checkProfileAndRedirect()
+          unwatch() // Hentikan watch setelah selesai
+        }
       }
-      
-      // TITIK 2: supabase.from('users').update()
-      console.log('[ProfileSetup] Attempting to update public.users profile...');
-      const { data: updatedUser, error: publicProfileError } = await supabase
-        .from('users')
-        .update(profileDataToUpdate)
-        .eq('id', authStore.user.id)
-        .select()
-        .single();
-      // Apakah ini resolve/reject?
+    )
+  } else {
+    checkProfileAndRedirect()
+  }
+})
 
-    if (publicProfileError) {
-      if (publicProfileError.code === 'PGRST116') {
-        const { error: insertError } = await supabase
-            .from('users')
-            .insert({ id: authStore.user.id, email: authStore.user.email, ...profileDataToUpdate})
-            .select()
-            .single();
-        if (insertError) throw insertError;
-      } else {
-        throw publicProfileError;
-      }
+function checkProfileAndRedirect() {
+  if (authStore.isProfileComplete) {
+    console.log('[ProfileSetupPage] Profile sudah lengkap, mengarahkan ke /')
+    router.replace('/')
+  } else if (!authStore.currentUser) {
+    // Jika tidak ada user, kembali ke login
+    console.log('[ProfileSetupPage] Tidak ada pengguna, mengarahkan ke /login')
+    router.replace('/login')
+  }
+  // Jika profil belum lengkap dan user ada, biarkan user di halaman ini
+}
+
+function validateForm() {
+  let isValid = true
+  uprNameError.value = ''
+  initialPeriodError.value = ''
+  riskAppetiteError.value = ''
+
+  if (!uprName.value.trim()) {
+    uprNameError.value = 'Nama UPR / Nama Pengguna harus diisi.'
+    isValid = false
+  }
+  if (
+    !/^\d{4}(?:[-\/](?:S[1-2]|Q[1-4]|(?:\d{4})))?$/i.test(
+      initialPeriod.value.trim()
+    )
+  ) {
+    initialPeriodError.value =
+      'Format Periode Awal tidak valid. Gunakan YYYY, YYYY/YYYY, atau YYYY-S1/Q1.'
+    isValid = false
+  }
+  const appetiteNum = parseInt(riskAppetite.value, 10)
+  if (isNaN(appetiteNum) || appetiteNum < 1 || appetiteNum > 25) {
+    riskAppetiteError.value =
+      'Selera Risiko harus berupa angka antara 1 dan 25.'
+    isValid = false
+  }
+  return isValid
+}
+
+async function handleSubmit() {
+  if (!validateForm()) {
+    return
+  }
+
+  // --- Pemeriksaan Kunci di Sini ---
+  if (authStore.isAuthenticated === false) {
+    // Periksa currentUser DAN $id nya
+    toast.error('Sesi Tidak Valid', {
+      description:
+        'Sesi pengguna tidak ditemukan atau tidak valid. Silakan coba login kembali.',
+    })
+    // Anda bisa mengarahkan ke login atau mencegah submit lebih lanjut
+    // router.push('/login'); // Opsional
+    isSaving.value = false // Pastikan isSaving di-reset jika ada
+    return
+  }
+  // --- Akhir Pemeriksaan Kunci ---
+
+  isSaving.value = true
+  try {
+    const uprData = {
+      name: uprName.value.trim(),
+      description: description.value.trim(),
+      activePeriod: initialPeriod.value.trim(),
+      availablePeriods: [initialPeriod.value.trim()],
+      riskAppetite: parseInt(riskAppetite.value, 10),
+      monitoringSettings:
+        defaultMonitoringFrequency.value === NO_FREQUENCY_SENTINEL
+          ? null
+          : defaultMonitoringFrequency.value,
     }
-    
-    console.log('[ProfileSetup] Supabase update/insert successful. Attempting to fetch app user profile...');
-    await appStore.fetchAppUserProfile(authStore.user.id);
-    console.log('[ProfileSetup] fetchAppUserProfile completed. isProfileComplete:', appStore.isProfileComplete);
 
-    toast.success("Profil berhasil disimpan!");
+    await uprStore.addUpr(uprData)
 
- await nextTick(); // Tunggu DOM update jika ada
+    toast.success('UPR Baru telah disimpan', {
+      description: 'Pengaturan UPR Anda telah berhasil disimpan.',
+    })
 
-    if (appStore.isProfileComplete) {
-      console.log('[ProfileSetup] Profile complete, navigating to Dashboard.');
-      router.push({ name: 'Dashboard' });
-    } else {
-      toast.error("Profil masih terdeteksi belum lengkap setelah disimpan. Silakan coba lagi atau hubungi support.");
-      console.error("[ProfileSetup] Profile reported as incomplete even after successful save and profile fetch. State:", appStore.appUser);
-    }
- 
-    isSaving.value = false;
-    
-};
+    await authStore.updateUserProfile({
+      uprId: uprStore.currentUpr?.id,
+    })
+    router.push('/')
+  } catch (error) {
+    console.error('Error saving initial upr:', error)
+    toast.error('Gagal Menyimpan UPR', {
+      description:
+        error.message || 'Terjadi kesalahan saat menyimpan UPR baru.',
+    })
+  } finally {
+    isSaving.value = false
+  }
+}
 </script>
