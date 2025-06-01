@@ -3,8 +3,8 @@
     <PageHeader
       title="Sasaran"
       :description="`Definisikan dan kelola tujuan strategis Anda untuk UPR: ${
-        authStore.appUser?.display_name || '...'
-      }, Periode: ${authStore.appUser?.active_period || '...'}.`"
+        authStore.uprUser.name || '...'
+      }, Periode: ${authStore.uprUser?.activePeriod || '...'}.`"
     >
       <template #actions>
         <Button
@@ -198,8 +198,8 @@ onMounted(() => {
 
 function fetchData() {
   if (authStore.isAuthenticated && authStore.isProfileComplete) {
-    if(appStore.goals.length < 1)
-    appStore.fetchGoals(authStore.uprUser.id, authStore.uprUser.activePeriod)
+    if (appStore.goals.length < 1)
+      appStore.fetchGoals(authStore.uprUser.id, authStore.uprUser.activePeriod)
   } else {
     appStore.goals.value = [] // Reset goals jika tidak ada konteks pengguna
   }
@@ -229,6 +229,7 @@ const filteredGoals = computed(() => {
     (goal) =>
       goal.name.toLowerCase().includes(searchTerm.value.toLowerCase()) ||
       goal.description.toLowerCase().includes(searchTerm.value.toLowerCase()) ||
+      goal.riskContext.toLowerCase().includes(searchTerm.value.toLowerCase()) ||
       (goal.code &&
         goal.code.toLowerCase().includes(searchTerm.value.toLowerCase()))
   )

@@ -3,22 +3,10 @@ import { onMounted, computed, ref } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/stores/app' // Store utama aplikasi
-import { toast } from 'vue-sonner' // Akan dikonversi nanti
-import { Toaster } from '@/components/ui/sonner' // Shadcn UI Vue
 import { Loader2 } from 'lucide-vue-next' // Ikon loader dari Lucide
-import AppLayout from '@/components/layout/AppLayout.vue' // Akan dikonversi nanti
 
 const authStore = useAuthStore()
-const appStore = useAppStore()
-const router = useRouter()
 const route = useRoute()
-
-const currentUprDisplay = computed(
-  () => authStore.appUser?.displayName || 'UPR...'
-)
-const currentPeriodDisplay = computed(
-  () => authStore.appUser?.activePeriod || '...'
-)
 
 const isAuthPage = computed(() => ['login', 'register'].includes(route.name))
 const isSetupPage = computed(() => route.name === 'profile-setup')
@@ -26,8 +14,6 @@ const isSetupPage = computed(() => route.name === 'profile-setup')
 onMounted(async () => {
   // Inisialisasi autentikasi saat aplikasi dimuat
   await authStore.initializeAuth()
-
-
 })
 </script>
 
@@ -92,12 +78,4 @@ onMounted(async () => {
       </transition>
     </router-view>
   </div>
-  <!-- <div>
-    <router-view v-slot="{ Component }">
-      <transition name="fade" mode="out-in">
-        <component :is="Component" />
-      </transition>
-    </router-view>
-  </div> -->
-  <Toaster />
 </template>

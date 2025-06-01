@@ -8,21 +8,19 @@ import {
 } from './appwriteCollectionIds' // Pastikan path benar
 import { deleteRiskCauseAndSubCollections } from './riskCauseService' // Untuk cascading delete
 
-export async function addPotentialRisk(
-  data,
-  goalId,
-  userId,
-  uprId,
-  period,
-  sequenceNumber
-) {
+export async function addPotentialRisk(data, goalId, userId) {
   try {
+    console.log(
+      '[potentialRiskService] Adding potential risk to Appwrite with data:',
+      data
+    )
     const docDataToSave = {
       description: data.description,
+      uprId: data.uprId, // ID unik untuk potensi risiko
       goalId: goalId,
       userId: userId,
-      period: period,
-      sequenceNumber: sequenceNumber,
+      period: data.period,
+      sequenceNumber: data.sequenceNumber,
       category: data.category || null,
       owner: data.owner || null,
       // Appwrite otomatis menangani $createdAt dan $updatedAt
@@ -58,14 +56,14 @@ export async function addPotentialRisk(
   }
 }
 
-export async function getPotentialRisksByGoalId(goalId, userId, period) {
+export async function getPotentialRisksByGoalId(goalId, uprId, period) {
   try {
     const response = await databases.listDocuments(
       DATABASE_ID,
       POTENTIAL_RISKS_COLLECTION_ID,
       [
         Query.equal('goalId', goalId),
-        Query.equal('userId', userId),
+        Query.equal('uprId', uprId),
         Query.equal('period', period),
         Query.orderAsc('sequenceNumber'),
       ]
@@ -74,6 +72,7 @@ export async function getPotentialRisksByGoalId(goalId, userId, period) {
     const potentialRisks = response.documents.map((doc) => ({
       id: doc.$id,
       goalId: doc.goalId,
+      uprId: doc.uprId,
       userId: doc.userId,
       period: doc.period,
       sequenceNumber: doc.sequenceNumber,
@@ -95,14 +94,14 @@ export async function getPotentialRisksByGoalId(goalId, userId, period) {
   }
 }
 
-export async function getPotentialRiskById(id, userId, period) {
+export async function getPotentialRiskById(id, uprId, period) {
   try {
     const document = await databases.getDocument(
       DATABASE_ID,
       POTENTIAL_RISKS_COLLECTION_ID,
       id
     )
-    if (document.userId !== userId || document.period !== period) {
+    if (document.uprId !== uprId || document.period !== period) {
       throw new Error(
         'Potensi risiko tidak cocok dengan konteks pengguna/periode.'
       )
@@ -110,6 +109,7 @@ export async function getPotentialRiskById(id, userId, period) {
     return {
       id: document.$id,
       goalId: document.goalId,
+      uprId: document.uprId,
       userId: document.userId,
       period: document.period,
       sequenceNumber: document.sequenceNumber,
@@ -131,17 +131,28 @@ export async function getPotentialRiskById(id, userId, period) {
 
 export async function updatePotentialRisk(id, updatedData) {
   try {
-    // Appwrite tidak otomatis memperbarui updatedAt, jadi jika ada field
-    // yang harus diperbarui, Anda perlu menambahkannya ke updatedData
-    // sebelum memanggil updateDocument.
+    console.log(
+      '[potentialRiskService] Updating potential risk in Appwrite with ID:',
+      id,
+      'and data:',
+      updatedData
+    )
+
+    const dataForAppwrite = {
+      description: updatedData.description,
+      category: updatedData.category || null,
+      owner: updatedData.owner || null,
+    }
+
     const document = await databases.updateDocument(
       DATABASE_ID,
       POTENTIAL_RISKS_COLLECTION_ID,
       id,
-      updatedData
+      dataForAppwrite
     )
+    console.log('[potentialRiskService] Updated document:', document)
     return {
-      id: document.$id,
+      // id: document.$id,
       goalId: document.goalId,
       userId: document.userId,
       period: document.period,
@@ -150,7 +161,6 @@ export async function updatePotentialRisk(id, updatedData) {
       category: document.category,
       owner: document.owner,
       identifiedAt: document.$createdAt,
-      updatedAt: document.$updatedAt, // Appwrite akan mengupdate ini secara otomatis
     }
   } catch (error) {
     console.error(

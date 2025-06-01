@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 const props = defineProps({
   asChild: { type: Boolean, required: false },
-  as: { type: [String, Object, Function], required: false, default: "a" },
+  as: { type: null, required: false, default: "a" },
   class: { type: null, required: false },
 });
 </script>

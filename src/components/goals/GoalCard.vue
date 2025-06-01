@@ -25,12 +25,15 @@
         </div>
       </div>
       <CardTitle class="text-lg">{{ goal.code }} - {{ goal.name }}</CardTitle>
-      <CardDescription class="line-clamp-3 min-h-[60px] text-sm">
+      <CardDescription class="line-clamp-3 min-h-[30px] text-sm">
         {{ goal.description }}
       </CardDescription>
     </CardHeader>
     <CardContent class="flex-grow pt-0 pb-3">
-      <p class="text-xs text-muted-foreground">
+      <p class="text-sm text-muted-foreground">
+        Konteks Risiko: <Badge>{{ goal.riskContext }}</Badge>
+      </p>
+      <p class="text-sm text-muted-foreground mt-1">
         Dibuat: {{ formatDate(goal.created_at || goal.createdAt) }}
       </p>
       <p class="text-sm text-muted-foreground mt-1">
@@ -59,6 +62,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Target, ShieldAlert, Pencil, Trash2, Edit } from 'lucide-vue-next'
 import { useAppStore } from '@/stores/app' // Akan di-uncomment saat store siap
 const appStore = useAppStore() // Simulasi store untuk demo

@@ -8,29 +8,17 @@ import {
 } from './appwriteCollectionIds' // Pastikan path benar
 import { deleteControlMeasure } from './controlMeasureService' // Untuk cascading delete
 
-export async function addRiskCause(
-  data,
-  potentialRiskId,
-  goalId,
-  userId,
-  period,
-  sequenceNumber
-) {
+export async function addRiskCause(data, sequenceNumber) {
   try {
     const docDataToSave = {
       description: data.description,
-      potentialRiskId: potentialRiskId,
-      goalId: goalId,
-      userId: userId,
-      period: period,
+      potentialRiskId: data.potentialRiskId,
+      goalId: data.goalId,
+      uprId: data.uprId,
+      userId: data.userId,
+      period: data.period,
       sequenceNumber: sequenceNumber,
       source: data.source,
-      keyRiskIndicator: data.keyRiskIndicator || null,
-      riskTolerance: data.riskTolerance || null,
-      likelihood: data.likelihood || null,
-      impact: data.impact || null,
-      // Appwrite otomatis menangani $createdAt dan $updatedAt
-      analysisUpdatedAt: data.analysisUpdatedAt || null, // Jika ini harus ada di Appwrite
     }
 
     const document = await databases.createDocument(
@@ -69,7 +57,7 @@ export async function addRiskCause(
 
 export async function getRiskCausesByPotentialRiskId(
   potentialRiskId,
-  userId,
+  uprId,
   period
 ) {
   try {
@@ -78,7 +66,7 @@ export async function getRiskCausesByPotentialRiskId(
       RISK_CAUSES_COLLECTION_ID,
       [
         Query.equal('potentialRiskId', potentialRiskId),
-        Query.equal('userId', userId),
+        Query.equal('uprId', uprId),
         Query.equal('period', period),
         Query.orderAsc('sequenceNumber'),
       ]

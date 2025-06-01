@@ -13,8 +13,8 @@
           />
           <Badge variant="outline" class="whitespace-nowrap font-semibold">
             {{
-              potentialRisk.sequence_number
-                ? `${parentGoalCode}.PR${potentialRisk.sequence_number}`
+              potentialRisk.sequenceNumber
+                ? `${parentGoalCode}.PR${potentialRisk.sequenceNumber}`
                 : 'PR.?'
             }}
           </Badge>
@@ -27,10 +27,16 @@
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem @click="emitAction('edit')">
+            <DropdownMenuItem
+              class="cursor-pointer"
+              @click="emitAction('edit')"
+            >
               <Pencil class="mr-2 h-4 w-4" /> Edit Detail Risiko
             </DropdownMenuItem>
-            <DropdownMenuItem @click="emitAction('analyze')">
+            <DropdownMenuItem
+              class="cursor-pointer"
+              @click="emitAction('analyze')"
+            >
               <Activity class="mr-2 h-4 w-4" />
               {{
                 potentialRisk.likelihood && potentialRisk.impact
@@ -41,7 +47,7 @@
             <DropdownMenuSeparator />
             <DropdownMenuItem
               @click="emitAction('delete')"
-              class="focus:bg-destructive focus:text-white text-destructive"
+              class="focus:bg-destructive focus:text-white text-destructive cursor-pointer"
             >
               <Trash2 class="mr-2 h-4 w-4 focus:text-white" />
               Hapus Risiko
@@ -90,8 +96,8 @@
           v-if="riskCausesCount > 0"
           variant="link"
           size="sm"
-          class="p-0 h-auto mt-1.5 text-primary hover:underline text-xs"
-          @click="() => onEditDetails(potentialRisk.id)"
+          class="p-0 h-auto mt-1.5 text-primary hover:underline text-xs cursor-pointer"
+          @click="emitAction('edit')"
           :disabled="isDeleting"
         >
           Lihat/Kelola Semua Penyebab
@@ -105,8 +111,8 @@
       <Button
         variant="outline"
         size="sm"
-        class="w-full justify-start"
-        @click="emitAction('manage-causes')"
+        class="w-full justify-start cursor-pointer"
+        @click="emitAction('edit')"
       >
         <ListTree class="mr-2 h-4 w-4" /> Lihat/Kelola Semua Penyebab
       </Button>
@@ -169,7 +175,11 @@ const props = defineProps({
   },
 })
 
+const riskCausesCount = computed(() => {
+  return props.potentialRisk.causes ? props.potentialRisk.causes.length : 0
+})
 const emit = defineEmits(['action', 'update:selected'])
+
 function emitAction(actionType) {
   emit('action', {
     type: actionType,

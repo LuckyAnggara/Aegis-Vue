@@ -17,9 +17,9 @@
       </div>
       <div class="text-xs text-muted-foreground space-x-2">
         <span
-          >Kategori:
+          >Sumber Penyebab:
           <Badge variant="outline" size="sm">{{
-            riskCause.category || 'N/A'
+            riskCause.source || 'N/A'
           }}</Badge></span
         >
         <span v-if="riskCause.likelihood"
@@ -38,10 +38,11 @@
             >
               <FlaskConical
                 class="h-4 w-4"
-                :class="{
-                  'text-primary':
-                    riskCause.likelihood && riskCause.impact_on_risk,
-                }"
+                :class="
+                  riskCause.likelihood && riskCause.impact_on_risk
+                    ? 'text-primary'
+                    : 'text-muted-foreground'
+                "
               />
               <span class="sr-only">Analisis Penyebab</span>
             </Button>

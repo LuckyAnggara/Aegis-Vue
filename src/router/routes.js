@@ -31,7 +31,7 @@ const routes = [
       {
         path: '/goal/:goalId', // Parameter dinamis goalId
         name: 'goal-risks',
-        component: () => import('@/views/risks/GoalRisksView.vue'),
+        component: () => import('@/views/potentialRisks/GoalRisksView.vue'),
         props: true, // Ini akan meneruskan route.params sebagai props ke komponen
         meta: {
           requiresAuth: true,
@@ -40,9 +40,22 @@ const routes = [
         },
       },
       {
-        path: '/risks/:goalId/add-potential-risk', // Rute baru
+        path: '/goal/:goalId/potential-risk/add', // Rute baru
         name: 'add-potential-risk',
-        component: () => import('@/views/risks/AddPotentialRiskView.vue'),
+        component: () =>
+          import('@/views/potentialRisks/AddPotentialRiskView.vue'),
+        props: true, // Ini akan meneruskan route.params (termasuk goalId) sebagai props
+        meta: {
+          requiresAuth: true,
+          requiresProfileComplete: true, // Asumsi menambah risiko butuh profil lengkap
+          layout: 'DefaultLayout',
+        },
+      },
+      {
+        path: '/goal/:goalId/potential-risk/:potentialRiskId/detail', // Rute baru
+        name: 'detail-potential-risk',
+        component: () =>
+          import('@/views/potentialRisks/DetailPotentialRiskView.vue'),
         props: true, // Ini akan meneruskan route.params (termasuk goalId) sebagai props
         meta: {
           requiresAuth: true,

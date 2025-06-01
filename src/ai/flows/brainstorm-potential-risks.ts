@@ -10,8 +10,7 @@
 
 import { ai } from '@/ai/genkit'
 import { z } from 'genkit'
-import type { RiskCategory } from '@/lib/types' // Import RiskCategory type
-import { RISK_CATEGORIES } from '@/lib/types' // Import RISK_CATEGORIES constant
+import { RISK_CATEGORIES as RiskCategory } from '@/lib/types' // Import RISK_CATEGORIES constant
 
 const BrainstormPotentialRisksInputSchema = z.object({
   goalDescription: z

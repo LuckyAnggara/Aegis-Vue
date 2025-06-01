@@ -12,6 +12,7 @@
     "@genkit-ai/googleai": "^1.10.0",
     "@tailwindcss/cli": "^4.1.8",
     "@tailwindcss/vite": "^4.1.8",
+    "@tanstack/vue-table": "^8.21.3",
     "@vueuse/core": "^13.3.0",
     "appwrite": "^18.1.1",
     "class-variance-authority": "^0.7.1",

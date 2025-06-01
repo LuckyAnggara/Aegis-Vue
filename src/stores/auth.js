@@ -49,10 +49,15 @@ export const useAuthStore = defineStore('auth', {
     async initializeAuth() {
       console.log('[AuthStore] initializeAuth: Starting...')
       const uprStore = useUprStore()
-      if (this.currentUser && this.appUser) {
-        this.authLoading = false
+
+      if (this.currentUser && this.appUser && this.uprUser) {
+        console.log(
+          '[AuthStore] Already initialized with currentUser, appUser, and uprUser.'
+        )
+
         return // Sudah diinisialisasi
       }
+      console.log('[AuthStore] No currentUser, fetching from Appwrite...')
       this.authLoading = true
       try {
         const appwriteAccount = await getCurrentAccount() // Mendapatkan sesi pengguna saat ini dari Appwrite

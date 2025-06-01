@@ -9,13 +9,7 @@ export const LIKELIHOOD_LEVELS_DESC_MAP = {
 }
 export const LIKELIHOOD_LEVELS_DESC = Object.keys(LIKELIHOOD_LEVELS_DESC_MAP)
 export const NO_FREQUENCY_SENTINEL = 'Tidak Ada'
-export const RISK_CAUSE_CATEGORIES = Object.freeze([
-  'Manusia',
-  'Proses',
-  'Sistem',
-  'Eksternal',
-  'Lainnya',
-])
+export const RISK_CAUSE_CATEGORIES = Object.freeze(['Internal', 'Eksternal'])
 
 export const IMPACT_LEVELS_DESC_MAP = {
   'Tidak Signifikan (1)': 1,
@@ -34,6 +28,12 @@ export const RISK_CATEGORIES = [
   'Keuangan',
   'Fraud',
   'Operasional',
+]
+
+export const RISK_CONTEXT = [
+  'Standar Kinerja',
+  'Risiko Fraud',
+  'Risiko Keuangan',
 ]
 
 export const RISK_SOURCES = ['Internal', 'Eksternal']

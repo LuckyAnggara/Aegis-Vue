@@ -48,12 +48,34 @@
               :disabled="isSubmitting"
               :class="{ 'border-destructive': errors.description }"
               rows="3"
-            />
+            ></Textarea>
             <p v-if="errors.description" class="text-xs text-destructive mt-1">
               {{ errors.description }}
             </p>
           </div>
         </div>
+        <div class="grid grid-cols-4 items-center gap-4">
+          <Label for="risk-context" class="text-right"> Konteks </Label>
+          <Select
+            class="w-full"
+            v-model="formData.riskContext"
+            :disabled="isSubmitting"
+          >
+            <SelectTrigger
+              id="pr-category"
+              class="mt-1 w-72"
+              :class="errors.riskContext ? 'border-destructive' : ''"
+            >
+              <SelectValue placeholder="Pilih konteks risiko" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem v-for="cat in riskContext" :key="cat" :value="cat">
+                {{ cat }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
         <DialogFooter>
           <Button
             type="button"
@@ -82,7 +104,7 @@
 </template>
 
 <script setup>
-import { ref, watch, computed, defineProps, defineEmits } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { Button } from '@/components/ui/button' //
 import {
   Dialog,
@@ -99,10 +121,19 @@ import { Textarea } from '@/components/ui/textarea' //
 import { PlusCircle, Pencil, Loader2, Save } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/auth' // Akan di-uncomment jika logika auth diperlukan
 import { toast } from 'vue-sonner' // Akan di-uncomment untuk notifikasi
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select' // Import komponen Select
+import { RISK_CONTEXT } from '@/lib/types' // Import kategori risiko
 
 const authStore = useAuthStore() // Ambil store auth jika diperlukan
 // Untuk simulasi, kita buat dummy authStore
 
+const riskContext = ref(RISK_CONTEXT) // Ambil kategori risiko dari lib/types
 const props = defineProps({
   existingGoal: {
     type: Object,
@@ -114,8 +145,8 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'save'])
 
 const isOpen = ref(props.modelValue || false)
-const formData = ref({ name: '', description: '' })
-const errors = ref({ name: '', description: '' })
+const formData = ref({ name: '', description: '', riskContext: '' })
+const errors = ref({ name: '', description: '', riskContext: '' })
 const isSubmitting = ref(false)
 
 const dialogTitleComputed = computed(() => {
@@ -146,11 +177,15 @@ watch(isOpen, (newVal) => {
     if (props.existingGoal) {
       formData.value.name = props.existingGoal.name
       formData.value.description = props.existingGoal.description
+      formData.value.riskContext = props.existingGoal.riskContext || ''
     } else {
       formData.value.name = ''
       formData.value.description = ''
+      formData.value.riskContext = ''
     }
-    errors.value = { name: '', description: '' }
+    errors.value = { name: '', description: '', riskContext: '' }
+  } else {
+    formData.value = { name: '', description: '', riskContext: '' }
   }
 })
 
@@ -168,6 +203,10 @@ function validateForm() {
   }
   if (formData.value.description.trim().length < 10) {
     errors.value.description = 'Deskripsi minimal 10 karakter.' //
+    isValid = false
+  }
+  if (!formData.value.riskContext) {
+    errors.value.riskContext = 'Konteks risiko harus dipilih.'
     isValid = false
   }
   return isValid
@@ -191,6 +230,7 @@ async function onSubmit() {
   const goalDataPayload = {
     name: formData.value.name,
     description: formData.value.description,
+    riskContext: formData.value.riskContext,
   }
 
   // Emit data ke parent

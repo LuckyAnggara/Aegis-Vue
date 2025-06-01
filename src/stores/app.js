@@ -48,12 +48,15 @@ import { useAuthStore } from './auth'
 export const useAppStore = defineStore('app', () => {
   // --- State ---
   const goals = ref([])
+  const goal = ref(null)
   const goalsLoading = ref(false)
 
   const potentialRisks = ref([])
+  const potentialRisk = ref(null)
   const potentialRisksLoading = ref(false)
 
   const riskCauses = ref([])
+  const riskCausesCurrentPR = ref([])
   const riskCausesLoading = ref(false)
 
   const controlMeasures = ref([])
@@ -68,8 +71,22 @@ export const useAppStore = defineStore('app', () => {
 
   const dataFetchedForPeriod = ref(null)
 
-  // --- Actions ---
+  const context = ref({ uprId: null, period: null })
 
+  // --- Actions ---
+  const _getCurrentUprIdAndPeriod = () => {
+    const authStore = useAuthStore()
+
+    const uprId = authStore.uprUser?.id
+    const period = authStore.uprUser?.activePeriod
+    if (!uprId || !period) {
+      console.warn(
+        '[appStore] UPR ID atau Periode aktif tidak tersedia untuk operasi store.'
+      )
+      return null
+    }
+    return { uprId, period, userId: authStore.uprUser?.id }
+  }
   const triggerInitialDataFetch = async (uprId, period) => {
     if (!uprId || !period) {
       console.warn(
@@ -275,14 +292,12 @@ export const useAppStore = defineStore('app', () => {
     }
   }
 
-  const getGoalById = async (id, uprId, period) => {
-    const authStore = useAuthStore()
-    if(uprId === null){
-      uprId = authStore.uprUser.id
-    }
-        if(period === null){
-      uprperiodId = authStore.uprUser.activePeriod
-    }
+  const getGoalById = async (id) => {
+    context.value = _getCurrentUprIdAndPeriod()
+
+    const uprId = context.value?.uprId
+    const period = context.value?.period
+
     const goalFromStore = goals.value.find(
       (g) => g.id === id && g.uprId === uprId && g.period === period
     )
@@ -294,7 +309,9 @@ export const useAppStore = defineStore('app', () => {
       `[AppStore] getGoalById: Goal ${id} not in store, fetching from service...`
     )
     try {
-      return await getGoalByIdFromService(id, uprId, period)
+      const result = await getGoalByIdFromService(id, uprId, period)
+      goal.value = result
+      return result
     } catch (error) {
       const serviceErrorMessage = error.message || String(error)
       console.error(
@@ -308,15 +325,37 @@ export const useAppStore = defineStore('app', () => {
   }
 
   // --- PotentialRisks Actions ---
-  const fetchPotentialRisks = async (uprId, period) => {
-    if (!uprId || !period) {
+
+  const _sequenceNumberForNewPotentialRisk = () => {
+    if (potentialRisks.value.length === 0) return 1
+    return Math.max(...potentialRisks.value.map((pr) => pr.sequenceNumber)) + 1
+  }
+
+  const fetchPotentialRisks = async (goalId) => {
+    context.value = _getCurrentUprIdAndPeriod()
+
+    // jika goalId diberikan, ambil risiko untuk goal tersebut
+    if (goalId) {
+      const prsForGoal = await fetchPotentialRisksByGoalIdFromService(
+        goalId,
+        context.value.uprId,
+        context.value.period
+      )
+      potentialRisks.value = prsForGoal
+      return
+    }
+
+    // jika tidak ada goalId, ambil semua risiko potensial untuk context saat ini
+    if (!context.value.uprId || !context.value.period) {
       potentialRisks.value = []
       potentialRisksLoading.value = false
       riskCausesLoading.value = false
       controlMeasuresLoading.value = false
       return
     }
-    console.log(`[AppStore] fetchPotentialRisks called for ${uprId}, ${period}`)
+    console.log(
+      `[AppStore] fetchPotentialRisks called for ${context.value.uprId}, ${context.value.period}`
+    )
     potentialRisksLoading.value = true
     try {
       const currentGoals = goals.value
@@ -327,7 +366,7 @@ export const useAppStore = defineStore('app', () => {
         potentialRisks.value = []
         riskCausesLoading.value = false
         controlMeasuresLoading.value = false
-        await fetchRiskCauses(uprId, period)
+        // await fetchRiskCauses(context.value.uprId, context.value.period)
         return
       }
       let allPRs = []
@@ -335,8 +374,8 @@ export const useAppStore = defineStore('app', () => {
         if (goal.uprId === uprId && goal.period === period) {
           const prsForGoal = await fetchPotentialRisksByGoalIdFromService(
             goal.id,
-            uprId,
-            period
+            context.value.uprId,
+            context.value.period
           )
           allPRs.push(...prsForGoal)
         }
@@ -346,7 +385,7 @@ export const useAppStore = defineStore('app', () => {
           (a.sequenceNumber || 0) - (b.sequenceNumber || 0) ||
           a.description.localeCompare(b.description)
       )
-      await fetchRiskCauses(uprId, period)
+      // await fetchRiskCauses(context.value.uprId, context.value.period)
     } catch (error) {
       const serviceErrorMessage = error.message || String(error)
       console.error(
@@ -362,24 +401,16 @@ export const useAppStore = defineStore('app', () => {
     }
   }
 
-  const addPotentialRisk = async (
-    data,
-    goalId,
-    uprId,
-    period,
-    sequenceNumber
-  ) => {
-
-    const authStore = useAuthStore()
-    uprId = authStore.uprUser.id
-    period = authStore.uprUser.activePeriod
+  const addPotentialRisk = async (data, goalId) => {
+    context.value = _getCurrentUprIdAndPeriod()
+    data.uprId = context.value.uprId
+    data.period = context.value.period
+    data.sequenceNumber = _sequenceNumberForNewPotentialRisk()
     try {
       const newPotentialRisk = await addPotentialRiskToService(
         data,
         goalId,
-        uprId,
-        period,
-        sequenceNumber
+        context.value.userId
       )
       if (newPotentialRisk) {
         potentialRisks.value = [...potentialRisks.value, newPotentialRisk].sort(
@@ -404,6 +435,7 @@ export const useAppStore = defineStore('app', () => {
         potentialRiskId,
         updatedData
       )
+
       if (updatedPR) {
         potentialRisks.value = potentialRisks.value
           .map((pr) => (pr.id === potentialRiskId ? updatedPR : pr))
@@ -413,6 +445,7 @@ export const useAppStore = defineStore('app', () => {
               a.description.localeCompare(b.description)
           )
       }
+
       return updatedPR
     } catch (error) {
       const serviceErrorMessage = error.message || String(error)
@@ -450,7 +483,11 @@ export const useAppStore = defineStore('app', () => {
     }
   }
 
-  const getPotentialRiskById = async (id, uprId, period) => {
+  const getPotentialRiskById = async (id) => {
+    context.value = _getCurrentUprIdAndPeriod()
+    const uprId = context.value.uprId
+    const period = context.value.period
+
     const riskFromStore = potentialRisks.value.find(
       (pr) => pr.id === id && pr.uprId === uprId && pr.period === period
     )
@@ -462,7 +499,9 @@ export const useAppStore = defineStore('app', () => {
       `[AppStore] getPotentialRiskById: PR ${id} not in store, fetching from service...`
     )
     try {
-      return await getPotentialRiskByIdFromService(id, uprId, period)
+      const result = await getPotentialRiskByIdFromService(id, uprId, period)
+      potentialRisk.value = result
+      return result
     } catch (error) {
       const serviceErrorMessage = error.message || String(error)
       console.error(
@@ -476,6 +515,11 @@ export const useAppStore = defineStore('app', () => {
   }
 
   // --- RiskCauses Actions ---
+
+  const _sequenceNumberForNewRiskCause = () => {
+    if (riskCauses.value.length === 0) return 1
+    return Math.max(...riskCauses.value.map((rc) => rc.sequenceNumber)) + 1
+  }
   const fetchRiskCauses = async (uprId, period) => {
     if (!uprId || !period) {
       riskCauses.value = []
@@ -523,24 +567,44 @@ export const useAppStore = defineStore('app', () => {
       riskCausesLoading.value = false
     }
   }
+  const fetchSingleRiskCauses = async (potentialRiskId) => {
+    context.value = _getCurrentUprIdAndPeriod()
+    const uprId = context.value.uprId
+    const period = context.value.period
 
-  const addRiskCause = async (
-    data,
-    potentialRiskId,
-    goalId,
-    uprId,
-    period,
-    sequenceNumber
-  ) => {
+    riskCausesLoading.value = true
     try {
-      const newRiskCause = await addRiskCauseToService(
-        data,
+      console.log(`[AppStore] fetchRiskCauses called for ${uprId}, ${period}`)
+      const rcsForPR = await fetchRiskCausesByPotentialRiskIdFromService(
         potentialRiskId,
-        goalId,
         uprId,
-        period,
-        sequenceNumber
+        period
       )
+      riskCausesCurrentPR.value = rcsForPR.sort(
+        (a, b) =>
+          (a.sequenceNumber || 0) - (b.sequenceNumber || 0) ||
+          a.description.localeCompare(b.description)
+      )
+      // await fetchControlMeasures(uprId, period)
+    } catch (error) {
+      const serviceErrorMessage = error.message || String(error)
+      console.error('[AppStore] fetchRiskCauses: Failed:', serviceErrorMessage)
+      riskCauses.value = []
+      throw error
+    } finally {
+      riskCausesLoading.value = false
+    }
+  }
+  const addRiskCause = async (data) => {
+    context.value = _getCurrentUprIdAndPeriod()
+    data.uprId = context.value.uprId
+    data.period = context.value.period
+    data.potentialRiskId = potentialRisk.value.id
+    data.goalId = potentialRisk.value.goalId
+    const sequenceNumber = _sequenceNumberForNewRiskCause()
+
+    try {
+      const newRiskCause = await addRiskCauseToService(data, sequenceNumber)
       if (newRiskCause) {
         riskCauses.value = [...riskCauses.value, newRiskCause].sort(
           (a, b) =>
@@ -596,7 +660,10 @@ export const useAppStore = defineStore('app', () => {
     }
   }
 
-  const getRiskCauseById = async (id, uprId, period) => {
+  const getRiskCauseById = async (id) => {
+    context.value = _getCurrentUprIdAndPeriod()
+    data.uprId = context.value.uprId
+    data.period = context.value.period
     const causeFromStore = riskCauses.value.find(
       (rc) => rc.id === id && rc.uprId === uprId && rc.period === period
     )
@@ -946,10 +1013,13 @@ export const useAppStore = defineStore('app', () => {
   return {
     // State
     goals,
+    goal,
     goalsLoading,
     potentialRisks,
+    potentialRisk,
     potentialRisksLoading,
     riskCauses,
+    riskCausesCurrentPR,
     riskCausesLoading,
     controlMeasures,
     controlMeasuresLoading,
@@ -976,6 +1046,7 @@ export const useAppStore = defineStore('app', () => {
     deletePotentialRisk,
     getPotentialRiskById,
     fetchRiskCauses,
+    fetchSingleRiskCauses,
     addRiskCause,
     updateRiskCause,
     deleteRiskCause,

@@ -2,7 +2,7 @@
   <div v-if="goals.length === 0" class="text-center text-gray-500 py-8">
     Belum ada sasaran yang dibuat untuk periode ini.
   </div>
-  <div v-else class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+  <div v-else class="grid gap-3 grid-cols-6 md:grid-cols-2 lg:grid-cols-3">
     <GoalCard
       v-for="goal in goals"
       :key="goal.id"
